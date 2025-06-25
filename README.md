@@ -1,9 +1,9 @@
 # Dual-Side Transient Shaping Pulse Density Modulation<br>FF信号生成用コード
 
 ## サンプルコードからの変更箇所
-- io_top.vhd（変更）
-- pwm_if.vhd（変更）
-- 20241210.c（ホストプログラム）
+- io_top.vhd（変更/修正/追記）
+- pwm_if.vhd（変更/修正/追記）
+- 20241210.c（ホストプログラム/新規）
 
 ## ホストプログラム　変数リスト
 - T_PDM_pulses:PDMの周期（半周期パルスの数）
@@ -16,6 +16,23 @@
 - dt：デッドタイムカウンタ（デフォルト：500nsとした）
 - enable：イネーブル信号（いらない？）
 - Uref,Vref,Wref：指令値（いらない？）
+
+# Core logic
+フルパルス信号pwm_up〜pwm_vn（S1〜S4）およびそれに同期した信号pwm_wp,pwm_wn（S5,S6）に対し、DSTSPDM用のスイッチ信号pwm_up_dt〜pwm_wn_dt（S1〜S6_out）を出力
+
+## 高レイヤ的な説明
+**インバータ側の説明（l:482-521）**
+1. pwm_upのエッジごとにpwm_counterをインクリメント
+2. pwm_counterがcnt_max_inv（PDMの周期？たとえば20とか）に到達すると0にリセット
+3. pwm_counterがt1_int（1次側パルススキップ数Mのこと？）
+   - 未満なら、output_signal_inv＝0、すなわち出力しない
+   - そうでない（以上）なら、output_signal_inv=1、すなわち出力する
+4. output_signal_invに対応した出力を作成（l:510-521）
+   - 何してるのかは忘れた
+
+**整流器側の説明(l:524-571）**
+1. pwm_wp（pwm_vpと同じ動作）のエッジごとにrect_counterをインクリメント
+2. rect_counterがcnt_max_rect（PDMの周期？たとえば20とか）に到達すると0にリセット
 
 ## 変数の流れ
 **.c内**
