@@ -17,10 +17,10 @@
 - enable：イネーブル信号（いらない？）
 - Uref,Vref,Wref：指令値（いらない？）
 
-# Core logic
+# Core logic of pulse_generator
 フルパルス信号pwm_up〜pwm_vn（S1〜S4）およびそれに同期した信号pwm_wp,pwm_wn（S5,S6）に対し、DSTSPDM用のスイッチ信号pwm_up_dt〜pwm_wn_dt（S1〜S6_out）を出力
 
-## 高レイヤ的な説明
+## 高レイヤ的な説明（pwm_if内のpulse_generator部分）
 **インバータ側の説明（l:482-521）**
 1. pwm_upのエッジごとにpwm_counterをインクリメント
 2. pwm_counterがcnt_max_inv（PDMの周期？たとえば20とか）に到達すると0にリセット
@@ -28,11 +28,28 @@
    - 未満なら、output_signal_inv＝0、すなわち出力しない
    - そうでない（以上）なら、output_signal_inv=1、すなわち出力する
 4. output_signal_invに対応した出力を作成（l:510-521）
-   - 何してるのかは忘れた
+   - 510~521行目は多分使ってない？
 
 **整流器側の説明(l:524-571）**
 1. pwm_wp（pwm_vpと同じ動作）のエッジごとにrect_counterをインクリメント
-2. rect_counterがcnt_max_rect（PDMの周期？たとえば20とか）に到達すると0にリセット
+2. rect_counterがcnt_max_rect-1（PDMの周期？たとえば20とか）に到達すると0にリセット
+3. rect_counterが
+  - td_intより小さいならoutput_signal_rectは1
+  - そうではなく、td_int+t2_intより小さいならoutput_signal_rectは0
+  - そうではない（td_int+t2_int以上）ならoutput_signal_rectは1
+
+**l:573-589は飛ばす**
+
+**l:592-605**
+output_signal_invを見て、1ならそのまま、0ならショートモード
+
+**l:607-619、622-631**
+rect_delay : std_logic_vector(293 downto 0) → 受電側を1/4周期（↔294クロック）遅らせるためのカウンタ
+- 上位ビット（293）から1まで順に、iビット目にi-1ビットを入力（1ビット左シフト）
+- 最下位ビット（0）にはoutput_signal_rectを入れる
+- rect_delay(293）を整流器出力信号として利用し、
+  - 1ならrectモード（スイッチはオフ↔ダイオード整流）
+  - 0ならshortモード
 
 ## 変数の流れ
 **.c内**
